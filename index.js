@@ -74,14 +74,14 @@ io.on("connection", (socket) => {
   });
 
   // Handle disconnection
-  // socket.on("disconnect", () => {
-  //   for (const userId in onlineUsers) {
-  //     if (onlineUsers[userId] === socket.id) {
-  //       delete onlineUsers[userId];
-  //       console.log(`User ${userId} disconnected`);
-  //     }
-  //   }
-  // });
+  socket.on("disconnect", () => {
+    for (const userId in onlineUsers) {
+      if (onlineUsers[userId] === socket.id) {
+        delete onlineUsers[userId];
+        console.log(`User ${userId} disconnected`);
+      }
+    }
+  });
 });
 
 app.post("/register", async (req, res) => {
@@ -136,7 +136,8 @@ app.post("/login", async (req, res) => {
       httpOnly: true,
       secure: false,
       sameSite: "strict",
-      maxAge: 3600000,
+      // maxAge: 86400000, 1 day
+      maxAge:3*24*60*60*1000  //3 day
     });
 
     res.json({ result: "Login successful" });
