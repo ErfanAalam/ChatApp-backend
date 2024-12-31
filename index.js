@@ -43,10 +43,12 @@ const io = new Server(port + 1, {
 const onlineUsers = {};
 
 io.on("connection", (socket) => {
+  let socketId = socket.id;
+  console.log(socketId);
+  
   console.log("scoket is connected", socket.id);
-
   socket.on("register-user", (userId) => {
-    onlineUsers[userId] = socket.id;
+    onlineUsers[userId] = socketId;
     console.log(`User ${userId} is online with socket ID ${socket.id}`);
   });
 
@@ -66,7 +68,7 @@ io.on("connection", (socket) => {
 
       console.log(senderId);
       console.log("Emitting receive-message:", { senderId, message });
-      io.to(recipientSocketId).emit("receive-message",{ senderId, message });
+      io.to(recipientSocketId).emit("receive-message", { senderId, message });
       console.log(message);
     } else {
       console.log(`User ${recipientId} is offline`);
@@ -137,7 +139,7 @@ app.post("/login", async (req, res) => {
       secure: false,
       sameSite: "strict",
       // maxAge: 86400000, 1 day
-      maxAge:3*24*60*60*1000  //3 day
+      maxAge: 3 * 24 * 60 * 60 * 1000, //3 day
     });
 
     res.json({ result: "Login successful" });
