@@ -77,12 +77,9 @@ io.on("connection", (socket) => {
 
   // Handle disconnection
   socket.on("disconnect", () => {
-    for (const userId in onlineUsers) {
-      if (onlineUsers[userId] === socket.id) {
-        delete onlineUsers[userId];
-        console.log(`User ${userId} disconnected`);
-      }
-    }
+    console.log(`Socket disconnected: ${socketId}`);
+    const userId = Object.keys(onlineUsers).find(key => onlineUsers[key] === socketId);
+    if (userId) delete onlineUsers[userId];
   });
 });
 
@@ -165,5 +162,5 @@ app.get("/allusers", async (req, res) => {
   const users = await userModel.find();
   // console.log(users);
 
-  res.json({ users: users });
+  res.json({ users: users, onlineUsers: onlineUsers });
 });
