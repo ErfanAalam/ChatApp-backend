@@ -23,6 +23,8 @@ app.use(express.json());
 
 env.config();
 
+// database connection
+
 mongoose.connect(process.env.MONGOURL).then(() => {
   console.log("Database connected succesfully");
 
@@ -83,13 +85,15 @@ io.on("connection", (socket) => {
   });
 });
 
+// handle user registeration 
+
 app.post("/register", async (req, res) => {
   const { username, email, password } = req.body;
 
   const existinguser = await userModel.findOne({ email });
 
   if (existinguser) {
-    return res.json({ result: "user exist" });
+    return res.json({ result: "user already exist" });
   }
 
   try {
@@ -103,17 +107,18 @@ app.post("/register", async (req, res) => {
 
     res.json({ result: "User successfully registered", user: userToSave });
   } catch (error) {
-    res.status(500).json({ result: "Error registering user", error });
+    res.status(500).json({ result: "Error in registering user", error });
   }
 });
+
+
+// handle login process
 
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
     const user = await userModel.findOne({ email });
-
-    // console.log(user);
 
     if (!user) {
       return res.status(401).json({ result: "User not found" });
@@ -145,9 +150,13 @@ app.post("/login", async (req, res) => {
   }
 });
 
+// fetch the loggedin user
+
 app.get("/getUser", authMiddleware, (req, res) => {
   res.status(200).json({ result: req.user });
 });
+
+// logout user from application
 
 app.post("/logout", (req, res) => {
   res.clearCookie("token", {
@@ -158,6 +167,8 @@ app.post("/logout", (req, res) => {
   return res.status(200).json({ result: "Logged out successfully" });
 });
 
+
+// fetching all users
 app.get("/allusers", async (req, res) => {
   const users = await userModel.find();
   // console.log(users);
