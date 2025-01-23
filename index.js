@@ -81,8 +81,8 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log(`Socket disconnected: ${socketId}`);
     const userId = Object.keys(onlineUsers).find(key => onlineUsers[key] === socketId);
-    if (userId) delete onlineUsers[userId];
-  });
+      if (userId) delete onlineUsers[userId];
+    });
 });
 
 // handle user registeration 
