@@ -13,6 +13,17 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  socketId: {
+    type: String,
+    default: null,
+  },
+  messages: [
+    {
+      senderId: String,
+      message: String,
+      timestamp: { type: Date, default: Date.now },
+    },
+  ],
 });
 
 const userModel = mongoose.model("user", UserSchema);

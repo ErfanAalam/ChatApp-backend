@@ -14,7 +14,7 @@ const port = process.env.port || 8001;
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: ["http://192.168.1.3:5173","http://localhost:5173"],
     credentials: true,
   })
 );
@@ -37,7 +37,7 @@ mongoose.connect(process.env.MONGOURL).then(() => {
 
 const io = new Server(port + 1, {
   cors: {
-    origin: "http://localhost:5173",
+    origin:  ["http://192.168.1.3:5173","http://localhost:5173"],
     methods: ["POST", "GET"],
   },
 });
@@ -46,32 +46,36 @@ const onlineUsers = {};
 
 io.on("connection", (socket) => {
   let socketId = socket.id;
-  console.log(socketId);
-  
+
   console.log("scoket is connected", socket.id);
-  socket.on("register-user", (userId) => {
+
+  socket.on("initialize-socket", async (userId) => {
+    if (!userId) {
+      console.warn("No userId provided for socket initialization.");
+      return;
+    }
+
     onlineUsers[userId] = socketId;
+    await userModel.findByIdAndUpdate(userId, { socketId });
     console.log(`User ${userId} is online with socket ID ${socket.id}`);
   });
 
-  console.log(onlineUsers);
-
   // Handle private messages
-  socket.on("private-message", ({ senderId, recipientId, message }) => {
+  socket.on("private-message", async ({ senderId, recipientId, message }) => {
     const recipientSocketId = onlineUsers[recipientId];
 
-    const data = {
-      senderId,
-      message,
-    };
+    const newMessage = { senderId, message, timestamp: new Date() };
+
+    await userModel.findByIdAndUpdate(senderId, {
+      $push: { messages: newMessage },
+    });
+    await userModel.findByIdAndUpdate(recipientId, {
+      $push: { messages: newMessage },
+    });
 
     if (recipientSocketId) {
-      console.log(recipientSocketId);
-
-      console.log(senderId);
-      console.log("Emitting receive-message:", { senderId, message });
       io.to(recipientSocketId).emit("receive-message", { senderId, message });
-      console.log(message);
+      console.log(`Message sent to user ${recipientId}: ${message}`);
     } else {
       console.log(`User ${recipientId} is offline`);
     }
@@ -80,12 +84,16 @@ io.on("connection", (socket) => {
   // Handle disconnection
   socket.on("disconnect", () => {
     console.log(`Socket disconnected: ${socketId}`);
-    const userId = Object.keys(onlineUsers).find(key => onlineUsers[key] === socketId);
-      if (userId) delete onlineUsers[userId];
-    });
+    const userId = Object.keys(onlineUsers).find(
+      (key) => onlineUsers[key] === socketId
+    );
+    // if (userId) {
+    //   delete onlineUsers[userId];
+    // }
+  });
 });
 
-// handle user registeration 
+// handle user registeration
 
 app.post("/register", async (req, res) => {
   const { username, email, password } = req.body;
@@ -103,6 +111,7 @@ app.post("/register", async (req, res) => {
       username,
       email,
       password: hashedpass,
+      socketId: null,
     });
 
     res.json({ result: "User successfully registered", user: userToSave });
@@ -110,7 +119,6 @@ app.post("/register", async (req, res) => {
     res.status(500).json({ result: "Error in registering user", error });
   }
 });
-
 
 // handle login process
 
@@ -136,12 +144,17 @@ app.post("/login", async (req, res) => {
       { expiresIn: "3h" }
     );
 
+    if (onlineUsers[user._id]) {
+      await userModel.findByIdAndUpdate(user._id, {
+        socketId: onlineUsers[user._id],
+      });
+    }
+
     res.cookie("token", token, {
       httpOnly: true,
       secure: false,
       sameSite: "strict",
-      // maxAge: 86400000, 1 day
-      maxAge: 3 * 24 * 60 * 60 * 1000, //3 day
+      maxAge: 20 * 24 * 60 * 60 * 1000, //token expire in 20 days
     });
 
     res.json({ result: "Login successful" });
@@ -158,15 +171,28 @@ app.get("/getUser", authMiddleware, (req, res) => {
 
 // logout user from application
 
-app.post("/logout", (req, res) => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: false,
-    sameSite: "strict",
-  });
-  return res.status(200).json({ result: "Logged out successfully" });
-});
+app.post("/logout", async (req, res) => {
+  try {
+    const token = req.cookies.token;
+    if (token) {
+      const decoded = jwt.verify(token, process.env.SECRET_KEY);
+      if (decoded && decoded.id) {
+        await userModel.findByIdAndUpdate(decoded.id, { socketId: null });
+        delete onlineUsers[decoded.id];
+      }
+    }
 
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "strict",
+    });
+    return res.status(200).json({ result: "Logged out successfully" });
+  } catch (error) {
+    console.error("Error during logout:", error);
+    return res.status(500).json({ result: "Error during logout" });
+  }
+});
 
 // fetching all users
 app.get("/allusers", async (req, res) => {
@@ -175,3 +201,70 @@ app.get("/allusers", async (req, res) => {
 
   res.json({ users: users, onlineUsers: onlineUsers });
 });
+
+
+// fetch message from the database comes from another user when he is offline
+app.get("/messages/:userId", async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ result: "User not found" });
+    }
+
+    res.json({ messages: user.messages });
+  } catch (error) {
+    res.status(500).json({ result: "Error fetching messages", error });
+  }
+});
+
+
+
+app.post("/messages", async (req, res) => {
+  const { senderId, recipientId, message, createdAt } = req.body;
+
+  if (!senderId || !recipientId || !message) {
+    return res.status(400).json({ result: "Invalid data provided" });
+  }
+
+  try {
+    // Save the message to the database
+    await userModel.findByIdAndUpdate(recipientId, {
+      $push: {
+        messages: {
+          senderId,
+          message,
+          timestamp: createdAt || Date.now(),
+        },
+      },
+    });
+
+    res.status(201).json({ result: "Message saved successfully" });
+  } catch (error) {
+    console.error("Error saving message:", error);
+    res.status(500).json({ result: "Error saving message", error });
+  }
+});
+
+
+// Clear all messages for a user
+app.delete("/messages/:userId", async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ result: "User not found" });
+    }
+
+    user.messages = []; // Clear all messages
+    await user.save();
+
+    res.status(200).json({ result: "All messages cleared successfully" });
+  } catch (error) {
+    console.error("Error clearing messages:", error);
+    res.status(500).json({ result: "Error clearing messages", error });
+  }
+});
+
