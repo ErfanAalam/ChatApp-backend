@@ -14,7 +14,7 @@ const port = process.env.port || 8001;
 
 app.use(
   cors({
-    origin: ["http://192.168.1.3:5173","http://localhost:5173"],
+    origin:  ["http://192.168.31.119:5173","http://localhost:5173"],
     credentials: true,
   })
 );
@@ -28,16 +28,23 @@ env.config();
 mongoose.connect(process.env.MONGOURL).then(() => {
   console.log("Database connected succesfully");
 
-  app.listen(port, () => {
+  app.listen(port, "0.0.0.0", () => {
     console.log(`Server is running on ${port}`);
   });
 });
+
+
+// debugging for mobile
+
+app.get("/",(req,res)=>{
+  res.send("hello erfan")
+})
 
 // Socket server initalization
 
 const io = new Server(port + 1, {
   cors: {
-    origin:  ["http://192.168.1.3:5173","http://localhost:5173"],
+    origin:  ["http://192.168.31.119:5173","http://localhost:5173"],
     methods: ["POST", "GET"],
   },
 });
@@ -64,21 +71,30 @@ io.on("connection", (socket) => {
   socket.on("private-message", async ({ senderId, recipientId, message }) => {
     const recipientSocketId = onlineUsers[recipientId];
 
-    const newMessage = { senderId, message, timestamp: new Date() };
+    // const newMessage = { senderId, message, timestamp: new Date() };
 
-    await userModel.findByIdAndUpdate(senderId, {
-      $push: { messages: newMessage },
-    });
-    await userModel.findByIdAndUpdate(recipientId, {
-      $push: { messages: newMessage },
-    });
+    // await userModel.findByIdAndUpdate(senderId, {
+    //   $push: { messages: newMessage },
+    // });
+    // await userModel.findByIdAndUpdate(recipientId, {
+    //   $push: { messages: newMessage },
+    // });
 
-    if (recipientSocketId) {
-      io.to(recipientSocketId).emit("receive-message", { senderId, message });
-      console.log(`Message sent to user ${recipientId}: ${message}`);
-    } else {
-      console.log(`User ${recipientId} is offline`);
+    // if (recipientSocketId) {
+    //   io.to(recipientSocketId).emit("receive-message", { senderId, message });
+    //   console.log(`Message sent to user ${recipientId}: ${message}`);
+    // } else {
+    //   console.log(`User ${recipientId} is offline`);
+    // }
+
+    if (!recipientSocketId) {
+      console.log(`User ${recipientId} is offline, message saved.`);
+      return;
     }
+  
+    io.to(recipientSocketId).emit("receive-message", { senderId, message });
+  
+    console.log(`Message sent to user ${recipientId}: ${message}`);
   });
 
   // Handle disconnection
@@ -204,8 +220,8 @@ app.get("/allusers", async (req, res) => {
 
 
 // fetch message from the database comes from another user when he is offline
-app.get("/messages/:userId", async (req, res) => {
-  const { userId } = req.params;
+app.get("/messages/:userId/:recipientId", async (req, res) => {
+  const { userId, recipientId } = req.params;
 
   try {
     const user = await userModel.findById(userId);
@@ -213,11 +229,20 @@ app.get("/messages/:userId", async (req, res) => {
       return res.status(404).json({ result: "User not found" });
     }
 
-    res.json({ messages: user.messages });
+    // Filter messages between the sender and recipient
+    const messages = user.messages.filter(
+      (msg) =>
+        (msg.senderId === userId && msg.recipientId === recipientId) ||
+        (msg.senderId === recipientId && msg.recipientId === userId)
+    );
+
+    res.json({ messages });
   } catch (error) {
+    console.error("Error fetching messages:", error);
     res.status(500).json({ result: "Error fetching messages", error });
   }
 });
+
 
 
 
@@ -230,15 +255,27 @@ app.post("/messages", async (req, res) => {
 
   try {
     // Save the message to the database
-    await userModel.findByIdAndUpdate(recipientId, {
-      $push: {
-        messages: {
-          senderId,
-          message,
-          timestamp: createdAt || Date.now(),
-        },
-      },
-    });
+    const sender = await userModel.findById(senderId);
+    const recipient = await userModel.findById(recipientId);
+
+    if (!sender || !recipient) {
+      return res.status(404).json({ result: "Sender or recipient not found" });
+    }
+
+    const newMessage = {
+      recipientId,
+      senderId,
+      message,
+      timestamp: createdAt || Date.now(),
+    };
+
+    // Save message for sender
+    sender.messages.push(newMessage);
+    await sender.save();
+
+    // Save message for recipient
+    recipient.messages.push(newMessage);
+    await recipient.save();
 
     res.status(201).json({ result: "Message saved successfully" });
   } catch (error) {

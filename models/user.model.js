@@ -19,6 +19,7 @@ const UserSchema = new mongoose.Schema({
   },
   messages: [
     {
+      recipientId: String,
       senderId: String,
       message: String,
       timestamp: { type: Date, default: Date.now },
