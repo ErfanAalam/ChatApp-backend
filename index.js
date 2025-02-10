@@ -112,7 +112,7 @@ io.on("connection", (socket) => {
 // handle user registeration
 
 app.post("/register", async (req, res) => {
-  const { username, email, password } = req.body;
+  const { username, email, password, profileImage } = req.body;
 
   const existinguser = await userModel.findOne({ email });
 
@@ -124,6 +124,7 @@ app.post("/register", async (req, res) => {
     const hashedpass = await bcrypt.hash(password, 10);
 
     const userToSave = await userModel.create({
+      profileImage,
       username,
       email,
       password: hashedpass,
