@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const UserSchema = new mongoose.Schema({
   profileImage: {
     type: String,
-    required: true,
+    // required: true,
   },
   username: {
     type: String,
