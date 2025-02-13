@@ -14,7 +14,8 @@ const port = process.env.port || 8001;
 
 app.use(
   cors({
-    origin:  ["https://chatapp-frontend-dq1n.onrender.com"],
+    // origin:  ["https://chatapp-frontend-dq1n.onrender.com"],
+    origin:  ["http://localhost:5173"],
     credentials: true,
   })
 );
@@ -44,7 +45,8 @@ app.get("/",(req,res)=>{
 
 const io = new Server(port + 1, {
   cors: {
-    origin:  ["https://chatapp-frontend-dq1n.onrender.com"],
+    // origin:  ["https://chatapp-frontend-dq1n.onrender.com"],
+    origin:  ["http://localhost:5173"],
     methods: ["POST", "GET"],
   },
 });
@@ -183,6 +185,8 @@ app.post("/login", async (req, res) => {
 // fetch the loggedin user
 
 app.get("/getUser", authMiddleware, (req, res) => {
+  console.log("hello ");
+  
   res.status(200).json({ result: req.user });
 });
 

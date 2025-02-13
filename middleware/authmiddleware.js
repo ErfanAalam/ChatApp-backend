@@ -5,6 +5,11 @@ const authMiddleware = async (req, res, next) => {
   try {
     const token = req.cookies.token;
 
+    console.log(token);
+    console.log(req.cookies);
+    console.log("hello");
+    
+
     if (!token) {
       return res.status(401).json({ result: "No token, authorization denied" });
     }
