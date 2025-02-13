@@ -15,7 +15,7 @@ const port = process.env.port || 8001;
 app.use(
   cors({
     // origin:  ["https://chatapp-frontend-dq1n.onrender.com"],
-    origin:  ["http://localhost:5173"],
+    origin: ["http://localhost:5173"],
     credentials: true,
   })
 );
@@ -34,19 +34,18 @@ mongoose.connect(process.env.MONGOURL).then(() => {
   });
 });
 
-
 // debugging for mobile
 
-app.get("/",(req,res)=>{
-  res.send("hello erfan")
-})
+app.get("/", (req, res) => {
+  res.send("hello erfan");
+});
 
 // Socket server initalization
 
 const io = new Server(port + 1, {
   cors: {
     // origin:  ["https://chatapp-frontend-dq1n.onrender.com"],
-    origin:  ["http://localhost:5173"],
+    origin: ["http://localhost:5173"],
     methods: ["POST", "GET"],
   },
 });
@@ -93,9 +92,9 @@ io.on("connection", (socket) => {
       console.log(`User ${recipientId} is offline, message saved.`);
       return;
     }
-  
+
     io.to(recipientSocketId).emit("receive-message", { senderId, message });
-  
+
     console.log(`Message sent to user ${recipientId}: ${message}`);
   });
 
@@ -168,11 +167,12 @@ app.post("/login", async (req, res) => {
         socketId: onlineUsers[user._id],
       });
     }
+    const isProduction = process.env.NODE_ENV === "production";
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: true,
-      sameSite: "strict",
+      secure: isProduction, // Secure only in production (Render)
+      sameSite: isProduction ? "none" : "strict",
       maxAge: 20 * 24 * 60 * 60 * 1000, //token expire in 20 days
     });
 
@@ -186,7 +186,7 @@ app.post("/login", async (req, res) => {
 
 app.get("/getUser", authMiddleware, (req, res) => {
   console.log("hello ");
-  
+
   res.status(200).json({ result: req.user });
 });
 
@@ -202,11 +202,12 @@ app.post("/logout", async (req, res) => {
         delete onlineUsers[decoded.id];
       }
     }
+    const isProduction = process.env.NODE_ENV === "production";
 
     res.clearCookie("token", {
       httpOnly: true,
-      secure: true,
-      sameSite: "strict",
+      secure: isProduction, // Secure only in production (Render)
+      sameSite: isProduction ? "none" : "strict",
     });
     return res.status(200).json({ result: "Logged out successfully" });
   } catch (error) {
@@ -222,7 +223,6 @@ app.get("/allusers", async (req, res) => {
 
   res.json({ users: users, onlineUsers: onlineUsers });
 });
-
 
 // fetch message from the database comes from another user when he is offline
 app.get("/messages/:userId/:recipientId", async (req, res) => {
@@ -247,9 +247,6 @@ app.get("/messages/:userId/:recipientId", async (req, res) => {
     res.status(500).json({ result: "Error fetching messages", error });
   }
 });
-
-
-
 
 app.post("/messages", async (req, res) => {
   const { senderId, recipientId, message, createdAt } = req.body;
@@ -289,7 +286,6 @@ app.post("/messages", async (req, res) => {
   }
 });
 
-
 // Clear all messages for a user
 app.delete("/messages/:userId", async (req, res) => {
   const { userId } = req.params;
@@ -309,4 +305,3 @@ app.delete("/messages/:userId", async (req, res) => {
     res.status(500).json({ result: "Error clearing messages", error });
   }
 });
-
