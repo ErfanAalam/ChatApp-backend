@@ -171,7 +171,7 @@ app.post("/login", async (req, res) => {
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: false,
+      secure: true,
       sameSite: "strict",
       maxAge: 20 * 24 * 60 * 60 * 1000, //token expire in 20 days
     });
@@ -205,7 +205,7 @@ app.post("/logout", async (req, res) => {
 
     res.clearCookie("token", {
       httpOnly: true,
-      secure: false,
+      secure: true,
       sameSite: "strict",
     });
     return res.status(200).json({ result: "Logged out successfully" });
