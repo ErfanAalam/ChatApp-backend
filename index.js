@@ -187,7 +187,6 @@ app.post("/login", async (req, res) => {
 // fetch the loggedin user
 
 app.get("/getUser", authMiddleware, (req, res) => {
-  console.log("hello ");
 
   res.status(200).json({ result: req.user });
 });
@@ -221,7 +220,7 @@ app.post("/logout", async (req, res) => {
 // fetching all users
 app.get("/allusers", async (req, res) => {
   const users = await userModel.find();
-  // console.log(users);
+  console.log(onlineUsers);
 
   res.json({ users: users, onlineUsers: onlineUsers });
 });
