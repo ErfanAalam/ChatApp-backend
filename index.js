@@ -41,7 +41,9 @@ app.get("/", (req, res) => {
 
 // Socket server initalization
 
-const io = new Server(port + 1, {
+const server = createServer(app);
+
+const io = new Server(server, {
   cors: {
     origin:  ["https://chatapp-frontend-dq1n.onrender.com"],
     methods: ["POST", "GET"],
