@@ -1,6 +1,6 @@
 import express from "express";
 import bcrypt from "bcryptjs";
-import { createServer } from "http";
+import { createServer } from "http"
 import mongoose, { isObjectIdOrHexString } from "mongoose";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -10,12 +10,13 @@ import userModel from "./models/user.model.js";
 import authMiddleware from "./middleware/authmiddleware.js";
 import { Server } from "socket.io";
 
+
 const app = express();
 const port = process.env.port || 8001;
 
 app.use(
   cors({
-    origin: ["https://chatapp-frontend-dq1n.onrender.com"],
+    origin:  ["https://chatapp-frontend-dq1n.onrender.com"],
     credentials: true,
   })
 );
@@ -46,10 +47,7 @@ const server = createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: [
-      "https://chatapp-frontend-dq1n.onrender.com",
-      "http://localhost:5173",
-    ],
+    origin:  ["https://chatapp-frontend-dq1n.onrender.com"],
     methods: ["POST", "GET"],
   },
 });
