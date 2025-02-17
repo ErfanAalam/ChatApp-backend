@@ -1,5 +1,6 @@
 import express from "express";
 import bcrypt from "bcryptjs";
+import { createServer } from "http"
 import mongoose, { isObjectIdOrHexString } from "mongoose";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -8,6 +9,7 @@ import env from "dotenv";
 import userModel from "./models/user.model.js";
 import authMiddleware from "./middleware/authmiddleware.js";
 import { Server } from "socket.io";
+
 
 const app = express();
 const port = process.env.port || 8001;
