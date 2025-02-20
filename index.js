@@ -13,6 +13,7 @@ import { Server } from "socket.io";
 
 const app = express();
 const port = process.env.port || 8001;
+const server = createServer(app);
 
 app.use(
   cors({
@@ -30,7 +31,7 @@ env.config();
 mongoose.connect(process.env.MONGOURL).then(() => {
   console.log("Database connected succesfully");
 
-  app.listen(port, "0.0.0.0", () => {
+  server.listen(port, "0.0.0.0", () => {
     console.log(`Server is running on ${port}`);
   });
 });
@@ -43,7 +44,6 @@ app.get("/", (req, res) => {
 
 // Socket server initalization
 
-const server = createServer(app);
 
 const io = new Server(server, {
   cors: {
