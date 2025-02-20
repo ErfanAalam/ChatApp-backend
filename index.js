@@ -288,8 +288,8 @@ app.post("/messages", async (req, res) => {
 });
 
 // Clear all messages for a user
-app.delete("/messages/:userId", async (req, res) => {
-  const { userId } = req.params;
+app.delete("/messages/:userId/:recipientId", async (req, res) => {
+  const { userId,recipientId } = req.params;
 
   try {
     const user = await userModel.findById(userId);
@@ -297,7 +297,7 @@ app.delete("/messages/:userId", async (req, res) => {
       return res.status(404).json({ result: "User not found" });
     }
 
-    user.messages = []; // Clear all messages
+    user.messages = user.messages.filter((msg) => msg.recipientId !== recipientId); // Clear all messages
     await user.save();
 
     res.status(200).json({ result: "All messages cleared successfully" });
