@@ -306,3 +306,27 @@ app.delete("/messages/:userId/:recipientId", async (req, res) => {
     res.status(500).json({ result: "Error clearing messages", error });
   }
 });
+
+
+// FetchUserProfile
+app.post("/fetchprofile", async (req, res) => {
+  try {
+    const { userId } = req.body; // Get userId from request body
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    const user = await userModel.findById(userId).select("-password"); // Exclude password
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
