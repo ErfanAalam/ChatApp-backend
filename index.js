@@ -245,7 +245,7 @@ app.get("/messages/:userId/:recipientId", async (req, res) => {
     );
 
     // 🔓 Decrypt each message
-    const decryptedMessages = messages.map((msg) => ({
+    const decryptedMessages = messages?.map((msg) => ({
       ...msg._doc,
       message: decrypt({ content: msg.message, iv: msg.iv })
     }));
