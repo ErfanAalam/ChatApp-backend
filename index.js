@@ -9,6 +9,8 @@ import env from "dotenv";
 import userModel from "./models/user.model.js";
 import authMiddleware from "./middleware/authmiddleware.js";
 import { Server } from "socket.io";
+import {encrypt} from "./encryption.js"
+import {decrypt} from "./encryption.js"
 
 
 const app = express();
@@ -242,7 +244,13 @@ app.get("/messages/:userId/:recipientId", async (req, res) => {
         (msg.senderId === recipientId && msg.recipientId === userId)
     );
 
-    res.json({ messages });
+    // 🔓 Decrypt each message
+    const decryptedMessages = messages.map((msg) => ({
+      ...msg._doc,
+      message: decrypt({ content: msg.message, iv: msg.iv })
+    }));
+
+    res.json({ messages: decryptedMessages });
   } catch (error) {
     console.error("Error fetching messages:", error);
     res.status(500).json({ result: "Error fetching messages", error });
@@ -257,7 +265,6 @@ app.post("/messages", async (req, res) => {
   }
 
   try {
-    // Save the message to the database
     const sender = await userModel.findById(senderId);
     const recipient = await userModel.findById(recipientId);
 
@@ -265,10 +272,14 @@ app.post("/messages", async (req, res) => {
       return res.status(404).json({ result: "Sender or recipient not found" });
     }
 
+    // 🔐 Encrypt the message
+    const encrypted = encrypt(message);
+
     const newMessage = {
       recipientId,
       senderId,
-      message,
+      message: encrypted.content, // encrypted content
+      iv: encrypted.iv, // save IV for decryption later
       timestamp: createdAt || Date.now(),
     };
 
