@@ -236,7 +236,7 @@ app.get("/messages/:userId/:recipientId", async (req, res) => {
     if (!user) {
       return res.status(404).json({ result: "User not found" });
     }
-    console.log("Fetched user:", user);
+    // console.log("Fetched user:", user);
 
     // Filter messages between the sender and recipient
     const userMessages = user.messages || []; // Fallback to empty array
