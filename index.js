@@ -9,8 +9,8 @@ import env from "dotenv";
 import userModel from "./models/user.model.js";
 import authMiddleware from "./middleware/authmiddleware.js";
 import { Server } from "socket.io";
-import {encrypt} from "./encryption.js"
-import {decrypt} from "./encryption.js"
+import { encrypt } from "./encryption.js";
+import { decrypt } from "./encryption.js";
 
 
 const app = express();

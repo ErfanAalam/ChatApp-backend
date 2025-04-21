@@ -5,7 +5,7 @@ const algorithm = 'aes-256-cbc';
 const secretKey = process.env.SECRET_KEY || 'your-32-byte-secret-key-123456';
 const iv = crypto.randomBytes(16);
 
-function encrypt(text) {
+export function encrypt(text) {
   const cipher = crypto.createCipheriv(algorithm, Buffer.from(secretKey), iv);
   let encrypted = cipher.update(text);
   encrypted = Buffer.concat([encrypted, cipher.final()]);
@@ -15,7 +15,7 @@ function encrypt(text) {
   };
 }
 
-function decrypt(encryptedData) {
+export function decrypt(encryptedData) {
   const iv = Buffer.from(encryptedData.iv, 'hex');
   const encryptedText = Buffer.from(encryptedData.content, 'hex');
   const decipher = crypto.createDecipheriv(algorithm, Buffer.from(secretKey), iv);
@@ -24,4 +24,4 @@ function decrypt(encryptedData) {
   return decrypted.toString();
 }
 
-module.exports = { encrypt, decrypt };
+// module.exports = { encrypt, decrypt };
