@@ -19,8 +19,8 @@ const server = createServer(app);
 
 app.use(
   cors({
-    // origin:  ["https://chatapp-frontend-dq1n.onrender.com"],
-    origin:  ["http://localhost:5173"],
+    origin:  ["https://chatapp-frontend-dq1n.onrender.com"],
+    // origin:  ["http://localhost:5173"],
     // http://localhost:5173
     credentials: true,
   })
@@ -51,8 +51,8 @@ app.get("/", (req, res) => {
 
 const io = new Server(server, {
   cors: {
-    // origin:  ["https://chatapp-frontend-dq1n.onrender.com"],
-    origin:  ["http://localhost:5173"],
+    origin:  ["https://chatapp-frontend-dq1n.onrender.com"],
+    // origin:  ["http://localhost:5173"],
     methods: ["POST", "GET"],
   },
 });
